@@ -1,0 +1,51 @@
+default:
+  amqp:
+    autoReconnect: true
+    healthcheckFile: false
+    backoffTime: 5000
+    channelTimeout: 5000
+    host: amqp://localhost
+    maxPerFetch: 2
+    mainExchange:
+      name: 'ig'
+      type: 'direct'
+      queue:
+        name: 'tasks'
+        pattern: '#1'
+      publish:
+        routingKey: '#1'
+        options :
+          persistent: true
+          contentEncoding: utf8
+    exchanges:
+      -
+        name: 'ig'
+        type: 'direct'
+        options :
+          durable: true
+          autoDelete: false
+        queue:
+          name: 'tasks'
+          pattern: '#1'
+          options:
+            autoDelete: false
+            durable: true
+            arguments:
+              x-dead-letter-exchange: 'dead_letter_tasks_exchange'
+              x-dead-letter-routing-key: '#2'
+      -
+        name: 'dead_letter_tasks_exchange'
+        type: 'direct'
+        options :
+          durable: true
+          autoDelete: false
+        queue:
+          name: 'dead_letter_tasks_queue'
+          pattern: '#2'
+          options:
+            autoDelete: false
+            durable: true
+            arguments:
+              x-dead-letter-exchange: 'ig'
+              x-dead-letter-routing-key: '#1'
+              x-message-ttl: 5000
